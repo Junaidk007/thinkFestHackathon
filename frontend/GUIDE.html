@@ -1,0 +1,788 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+
+.app { display: flex; gap: 0; min-height: 600px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+
+.sidebar { width: 220px; flex-shrink: 0; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); padding: 12px 8px; overflow-y: auto; }
+.sidebar-title { font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 8px 8px; }
+
+.tree-item { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--color-text-secondary); transition: background 0.15s; user-select: none; }
+.tree-item:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+.tree-item.active { background: var(--color-background-primary); color: var(--color-text-primary); font-weight: 500; }
+.tree-item .icon { font-size: 13px; flex-shrink: 0; }
+.tree-section { font-size: 10px; color: var(--color-text-tertiary); padding: 10px 8px 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+.tree-indent { padding-left: 20px; }
+
+.content { flex: 1; padding: 24px 28px; overflow-y: auto; min-width: 0; }
+.content-header { margin-bottom: 20px; }
+.file-path { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); background: var(--color-background-secondary); display: inline-block; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px; }
+.file-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.file-subtitle { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+
+.section-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; margin: 20px 0 8px; }
+
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.feature-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+.feature-card .fc-label { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+.feature-card .fc-desc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.45; }
+
+.dep-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.dep-pill { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); background: var(--color-background-secondary); }
+.dep-pill.core { border-color: var(--color-border-info); color: var(--color-text-info); background: var(--color-background-info); }
+
+.code-block { font-family: var(--font-mono); font-size: 11px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 14px; line-height: 1.7; color: var(--color-text-secondary); margin-bottom: 12px; white-space: pre; overflow-x: auto; }
+
+.flow-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.flow-node { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; }
+.flow-node.highlight { border-color: var(--color-border-info); color: var(--color-text-info); background: var(--color-background-info); }
+.flow-arr { color: var(--color-text-tertiary); font-size: 14px; }
+
+.hook-feature { display: flex; gap: 10px; padding: 8px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); margin-bottom: 6px; background: var(--color-background-primary); }
+.hook-name { font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--color-text-info); min-width: 100px; flex-shrink: 0; }
+.hook-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; }
+
+.page-map { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.page-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; background: var(--color-background-primary); }
+.page-card .route { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 4px; }
+.page-card .pname { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.page-card .pdesc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.45; }
+
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.ov-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; background: var(--color-background-primary); text-align: center; }
+.ov-num { font-size: 24px; font-weight: 500; color: var(--color-text-primary); }
+.ov-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 500; margin-right: 4px; }
+.tag-green { background: var(--color-background-success); color: var(--color-text-success); }
+.tag-blue { background: var(--color-background-info); color: var(--color-text-info); }
+.tag-warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+
+.divider { height: 0.5px; background: var(--color-border-tertiary); margin: 16px 0; }
+
+.nav-footer { display: flex; gap: 8px; margin-top: 24px; padding-top: 16px; border-top: 0.5px solid var(--color-border-tertiary); }
+.nav-btn { font-size: 11px; padding: 6px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-secondary); transition: background 0.15s; }
+.nav-btn:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+.nav-btn.primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+.nav-btn.primary:hover { opacity: 0.85; }
+</style>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-title">Nexus Codebase</div>
+
+    <div class="tree-item active" onclick="show('overview')" id="tab-overview">
+      <span class="icon">🗺</span> Overview
+    </div>
+    <div class="tree-item" onclick="show('entry')" id="tab-entry">
+      <span class="icon">⚡</span> Entry & Config
+    </div>
+
+    <div class="tree-section">Hooks</div>
+    <div class="tree-indent">
+      <div class="tree-item" onclick="show('useTheme')" id="tab-useTheme">
+        <span class="icon">🎨</span> useTheme
+      </div>
+      <div class="tree-item" onclick="show('useRecords')" id="tab-useRecords">
+        <span class="icon">🗄</span> useRecords
+      </div>
+    </div>
+
+    <div class="tree-section">Components</div>
+    <div class="tree-indent">
+      <div class="tree-item" onclick="show('DashboardLayout')" id="tab-DashboardLayout">
+        <span class="icon">📐</span> DashboardLayout
+      </div>
+      <div class="tree-item" onclick="show('SummaryCards')" id="tab-SummaryCards">
+        <span class="icon">📊</span> SummaryCards
+      </div>
+      <div class="tree-item" onclick="show('RecordForm')" id="tab-RecordForm">
+        <span class="icon">📝</span> RecordForm
+      </div>
+      <div class="tree-item" onclick="show('RecordTable')" id="tab-RecordTable">
+        <span class="icon">📋</span> RecordTable
+      </div>
+      <div class="tree-item" onclick="show('Modals')" id="tab-Modals">
+        <span class="icon">🪟</span> Modals
+      </div>
+      <div class="tree-item" onclick="show('StatusBadge')" id="tab-StatusBadge">
+        <span class="icon">🏷</span> StatusBadge
+      </div>
+    </div>
+
+    <div class="tree-section">Pages</div>
+    <div class="tree-indent">
+      <div class="tree-item" onclick="show('LandingPage')" id="tab-LandingPage">
+        <span class="icon">🌐</span> LandingPage
+      </div>
+      <div class="tree-item" onclick="show('DashboardHome')" id="tab-DashboardHome">
+        <span class="icon">🏠</span> DashboardHome
+      </div>
+      <div class="tree-item" onclick="show('AddRecord')" id="tab-AddRecord">
+        <span class="icon">➕</span> AddRecord
+      </div>
+      <div class="tree-item" onclick="show('ManageRecords')" id="tab-ManageRecords">
+        <span class="icon">⚙</span> ManageRecords
+      </div>
+      <div class="tree-item" onclick="show('Analytics')" id="tab-Analytics">
+        <span class="icon">📈</span> Analytics
+      </div>
+      <div class="tree-item" onclick="show('Settings')" id="tab-Settings">
+        <span class="icon">🔧</span> Settings
+      </div>
+    </div>
+
+    <div class="tree-section">Styles & Data</div>
+    <div class="tree-indent">
+      <div class="tree-item" onclick="show('css')" id="tab-css">
+        <span class="icon">🎭</span> index.css
+      </div>
+      <div class="tree-item" onclick="show('dataflow')" id="tab-dataflow">
+        <span class="icon">🔄</span> Data flow
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<script>
+const TABS = {
+  overview: {
+    path: 'nexus-dashboard/',
+    title: 'Project Overview',
+    subtitle: 'A full-stack React application built as a universal hackathon scaffold. Every part of it — the landing page, dashboard, CRUD system, and analytics — is wired together and ready to rebrand in minutes.',
+    render: () => `
+      <div class="overview-grid">
+        <div class="ov-card"><div class="ov-num">20</div><div class="ov-label">Source files</div></div>
+        <div class="ov-card"><div class="ov-num">6</div><div class="ov-label">Pages</div></div>
+        <div class="ov-card"><div class="ov-num">7</div><div class="ov-label">Components</div></div>
+      </div>
+      <div class="section-label">Tech stack</div>
+      <div class="dep-list">
+        <span class="dep-pill core">React 18</span>
+        <span class="dep-pill core">Vite</span>
+        <span class="dep-pill core">Tailwind CSS</span>
+        <span class="dep-pill">Framer Motion</span>
+        <span class="dep-pill">Three.js</span>
+        <span class="dep-pill">@react-three/fiber</span>
+        <span class="dep-pill">Recharts</span>
+        <span class="dep-pill">React Router v6</span>
+        <span class="dep-pill">Lucide Icons</span>
+        <span class="dep-pill">react-hot-toast</span>
+        <span class="dep-pill">date-fns</span>
+      </div>
+      <div class="section-label">Folder structure</div>
+      <div class="code-block">nexus-dashboard/
+├── index.html             ← Google Fonts, root div
+├── vite.config.js         ← Vite bundler config
+├── tailwind.config.js     ← Custom tokens, dark mode
+├── postcss.config.js      ← PostCSS pipeline
+├── package.json           ← All 11 dependencies
+└── src/
+    ├── main.jsx           ← React DOM entry
+    ├── App.jsx            ← Route tree
+    ├── index.css          ← Global styles + Tailwind
+    ├── hooks/
+    │   ├── useTheme.jsx   ← Dark/light context
+    │   └── useRecords.js  ← CRUD + localStorage
+    ├── components/
+    │   ├── DashboardLayout.jsx
+    │   ├── SummaryCards.jsx
+    │   ├── RecordForm.jsx
+    │   ├── RecordTable.jsx
+    │   ├── EditModal.jsx
+    │   ├── ConfirmModal.jsx
+    │   └── StatusBadge.jsx
+    └── pages/
+        ├── LandingPage.jsx
+        ├── DashboardHome.jsx
+        ├── AddRecord.jsx
+        ├── ManageRecords.jsx
+        ├── Analytics.jsx
+        └── Settings.jsx</div>
+      <div class="section-label">How it starts</div>
+      <div class="flow-row">
+        <div class="flow-node">index.html</div><span class="flow-arr">→</span>
+        <div class="flow-node">main.jsx</div><span class="flow-arr">→</span>
+        <div class="flow-node">App.jsx</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">ThemeProvider wraps everything</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node">/</div><span class="flow-arr">→</span>
+        <div class="flow-node">LandingPage</div>
+        <span style="margin: 0 8px; color: var(--color-text-tertiary)">  |  </span>
+        <div class="flow-node">/dashboard/*</div><span class="flow-arr">→</span>
+        <div class="flow-node">DashboardLayout + child page</div>
+      </div>
+    `
+  },
+
+  entry: {
+    path: 'src/main.jsx  ·  src/App.jsx',
+    title: 'Entry point & routing',
+    subtitle: 'main.jsx boots React and wraps the app in BrowserRouter. App.jsx defines every route — the landing page at / and all dashboard pages nested under /dashboard.',
+    render: () => `
+      <div class="section-label">main.jsx — what it does</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">ReactDOM.createRoot</div><div class="fc-desc">Mounts the app into #root in index.html</div></div>
+        <div class="feature-card"><div class="fc-label">BrowserRouter</div><div class="fc-desc">Enables HTML5 history-based routing throughout the app</div></div>
+        <div class="feature-card"><div class="fc-label">import './index.css'</div><div class="fc-desc">Loads Tailwind + all custom utility classes globally</div></div>
+      </div>
+      <div class="section-label">App.jsx — route tree</div>
+      <div class="code-block">/ → LandingPage (standalone, no layout wrapper)
+
+/dashboard           → DashboardLayout (sidebar + navbar)
+  index              → DashboardHome
+  add                → AddRecord
+  records            → ManageRecords
+  analytics          → Analytics
+  settings           → Settings</div>
+      <div class="section-label">Key pattern — nested routes</div>
+      <div class="hook-feature">
+        <div class="hook-name">&lt;Outlet /&gt;</div>
+        <div class="hook-desc">DashboardLayout renders &lt;Outlet /&gt; where child pages inject. This means the sidebar and navbar render once, and only the page content swaps — no full re-mount.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">&lt;Toaster /&gt;</div>
+        <div class="hook-desc">react-hot-toast sits at App root so toast notifications work on every page from a single instance.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">ThemeProvider</div>
+        <div class="hook-desc">Wraps the entire app so any component can call useTheme() to read or toggle dark mode. Persists choice to localStorage.</div>
+      </div>
+    `
+  },
+
+  useTheme: {
+    path: 'src/hooks/useTheme.jsx',
+    title: 'useTheme — dark/light mode',
+    subtitle: 'A React Context that stores the dark/light preference, syncs it to the HTML class and localStorage, and exposes a { dark, setDark } API to any component.',
+    render: () => `
+      <div class="section-label">How it works</div>
+      <div class="hook-feature">
+        <div class="hook-name">useState init</div>
+        <div class="hook-desc">Reads 'nexus-theme' from localStorage on first render. Falls back to light if nothing is saved.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">useEffect</div>
+        <div class="hook-desc">Watches the dark value. When it flips, adds/removes the 'dark' class on &lt;html&gt; — this is how Tailwind's darkMode: 'class' strategy works.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">ThemeProvider</div>
+        <div class="hook-desc">Wraps the whole app in App.jsx. Any component inside can call useTheme() to get dark and setDark.</div>
+      </div>
+      <div class="section-label">Who uses it</div>
+      <div class="dep-list">
+        <span class="dep-pill">DashboardLayout (toggle button)</span>
+        <span class="dep-pill">Settings (mode selector)</span>
+      </div>
+      <div class="section-label">Tailwind dark mode in practice</div>
+      <div class="code-block">// Every Tailwind class can have a dark: prefix
+className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+// When &lt;html class="dark"&gt; is set, dark: variants win</div>
+    `
+  },
+
+  useRecords: {
+    path: 'src/hooks/useRecords.js',
+    title: 'useRecords — the data engine',
+    subtitle: 'The entire CRUD system lives here. It manages an array of record objects in React state, syncs every change to localStorage, and seeds 10 demo records on first load.',
+    render: () => `
+      <div class="section-label">Data shape — one record looks like this</div>
+      <div class="code-block">{ id: '1', name: 'Alice Johnson', category: 'Research',
+  status: 'Active', date: '2024-01-15',
+  description: 'Lead researcher on quantum project.' }</div>
+      <div class="section-label">Exposed API</div>
+      <div class="hook-feature">
+        <div class="hook-name">records</div>
+        <div class="hook-desc">The live array of all records. Components read this to render tables, cards, and charts.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">addRecord(data)</div>
+        <div class="hook-desc">Generates a unique id (Date.now().toString()), merges it with the form data, and prepends to the array.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">updateRecord(id, data)</div>
+        <div class="hook-desc">Maps over records, finds the matching id, and spreads the new data in — everything else stays unchanged.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">deleteRecord(id)</div>
+        <div class="hook-desc">Filters out the record with the matching id. The UI re-renders instantly.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">getRecord(id)</div>
+        <div class="hook-desc">Finds and returns a single record — used to populate the edit form.</div>
+      </div>
+      <div class="section-label">localStorage sync</div>
+      <div class="code-block">// On every records state change:
+useEffect(() => {
+  localStorage.setItem('nexus-records', JSON.stringify(records))
+}, [records])
+
+// On first render: read saved data, or load 10 seed records
+const saved = localStorage.getItem('nexus-records')
+return saved ? JSON.parse(saved) : SEED_DATA</div>
+      <div class="section-label">To add a new field (e.g. "priority")</div>
+      <div class="code-block">1. Add 'priority' to SEED_DATA objects
+2. Add 'priority' to defaultForm in RecordForm.jsx
+3. Add a form input for it in RecordForm.jsx
+4. Optionally show it as a column in RecordTable.jsx</div>
+    `
+  },
+
+  DashboardLayout: {
+    path: 'src/components/DashboardLayout.jsx',
+    title: 'DashboardLayout — shell',
+    subtitle: 'The persistent wrapper for all dashboard pages. Renders the sidebar, the top navbar, and an Outlet where child pages inject. The sidebar collapses to a slide-in drawer on mobile.',
+    render: () => `
+      <div class="section-label">Structure</div>
+      <div class="flow-row">
+        <div class="flow-node">Sidebar (fixed on desktop)</div>
+        <span class="flow-arr">+</span>
+        <div class="flow-node">Main column</div>
+      </div>
+      <div class="flow-row" style="padding-left:140px;">
+        <div class="flow-node">Top Navbar</div>
+        <span class="flow-arr">+</span>
+        <div class="flow-node highlight">&lt;Outlet /&gt; ← page goes here</div>
+      </div>
+      <div class="section-label">Sidebar features</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">NavLink active state</div><div class="fc-desc">React Router's NavLink auto-adds the 'active' class to the current route. Tailwind styles it differently.</div></div>
+        <div class="feature-card"><div class="fc-label">Mobile drawer</div><div class="fc-desc">On screens below lg, sidebar slides in/out via Framer Motion. A backdrop overlay closes it on tap.</div></div>
+        <div class="feature-card"><div class="fc-label">Exit to landing</div><div class="fc-desc">LogOut button navigates to / using useNavigate(), leaving the dashboard entirely.</div></div>
+      </div>
+      <div class="section-label">Navbar features</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Search bar</div><div class="fc-desc">Decorative input in the navbar — actual search logic lives in RecordTable's own state.</div></div>
+        <div class="feature-card"><div class="fc-label">ThemeToggle</div><div class="fc-desc">Sun/Moon icon animates with Framer Motion AnimatePresence on switch. Calls useTheme.</div></div>
+        <div class="feature-card"><div class="fc-label">Avatar</div><div class="fc-desc">Gradient circle with initials. Replace with a real auth avatar in production.</div></div>
+        <div class="feature-card"><div class="fc-label">Notification dot</div><div class="fc-desc">Bell icon with a small blue dot. Purely decorative — wire to real data as needed.</div></div>
+      </div>
+      <div class="section-label">Page transition</div>
+      <div class="hook-feature">
+        <div class="hook-name">AnimatePresence</div>
+        <div class="hook-desc">Wraps the Outlet. Every page fade/slides in (opacity 0→1, y 10→0) and fades out when the route changes. Uses Framer Motion's key-based re-mount detection.</div>
+      </div>
+    `
+  },
+
+  SummaryCards: {
+    path: 'src/components/SummaryCards.jsx',
+    title: 'SummaryCards — animated stats',
+    subtitle: 'Renders 4 metric cards at the top of the dashboard. Each card shows a count, a label, a sub-note, and an animated progress bar. All data is computed live from the records array.',
+    render: () => `
+      <div class="section-label">The 4 cards</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Total Records</div><div class="fc-desc">records.length — always the full count regardless of filters.</div></div>
+        <div class="feature-card"><div class="fc-label">Active Records</div><div class="fc-desc">Filtered by status === 'Active'. Shows % of total as sub-text.</div></div>
+        <div class="feature-card"><div class="fc-label">Pending Review</div><div class="fc-desc">Filtered by status === 'Pending'. Signals records needing attention.</div></div>
+        <div class="feature-card"><div class="fc-label">Recent Activity</div><div class="fc-desc">First 3 records in the array (newest added, since addRecord prepends).</div></div>
+      </div>
+      <div class="section-label">Animation system</div>
+      <div class="hook-feature">
+        <div class="hook-name">cardVariants</div>
+        <div class="hook-desc">Each card has a 'hidden' (opacity 0, y 20, scale 0.96) and 'visible' state. The custom prop staggers the delay by index × 0.1s — cards cascade in one by one.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">Progress bar</div>
+        <div class="hook-desc">A div animated from width: 0 to width: (value/total × 100)%. Uses a gradient background matching each card's color theme.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">whileHover</div>
+        <div class="hook-desc">Cards lift 3px (y: -3) and add a box-shadow on hover — subtle but premium-feeling interaction.</div>
+      </div>
+    `
+  },
+
+  RecordForm: {
+    path: 'src/components/RecordForm.jsx',
+    title: 'RecordForm — universal form',
+    subtitle: 'A reusable form with 5 fields: Name, Category (dropdown), Status (pill buttons), Date, and Description. Has full client-side validation, per-field error messages, and a character counter.',
+    render: () => `
+      <div class="section-label">Fields</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Name</div><div class="fc-desc">Required, min 2 chars. Shows error only after the field is touched (blurred).</div></div>
+        <div class="feature-card"><div class="fc-label">Category</div><div class="fc-desc">Native select with 8 options. Extensible — just add to the CATEGORIES array.</div></div>
+        <div class="feature-card"><div class="fc-label">Status</div><div class="fc-desc">3 pill buttons (Active / Pending / Closed). Each lights up with its own color when selected.</div></div>
+        <div class="feature-card"><div class="fc-label">Date</div><div class="fc-desc">HTML date input, defaults to today. Required.</div></div>
+        <div class="feature-card"><div class="fc-label">Description</div><div class="fc-desc">Optional textarea, 300 char max. Counter turns red at 280+.</div></div>
+      </div>
+      <div class="section-label">Validation pattern</div>
+      <div class="hook-feature">
+        <div class="hook-name">touched state</div>
+        <div class="hook-desc">Tracks which fields have been blurred. Errors only show for touched fields — prevents showing errors before the user has interacted.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">validate(form)</div>
+        <div class="hook-desc">Pure function — takes the form object, returns an errors object. Called on blur and on submit.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">AnimatePresence</div>
+        <div class="hook-desc">Error messages animate in/out with height transition. Feels smooth rather than jarring.</div>
+      </div>
+      <div class="section-label">Reuse pattern</div>
+      <div class="hook-feature">
+        <div class="hook-name">initialData prop</div>
+        <div class="hook-desc">When passed (from EditModal), the form pre-fills with existing record data. When null (AddRecord page), it starts with empty defaults.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">onSubmit(data)</div>
+        <div class="hook-desc">Calls the parent-provided callback with the validated form data. The form doesn't know if it's adding or editing — the parent decides.</div>
+      </div>
+    `
+  },
+
+  RecordTable: {
+    path: 'src/components/RecordTable.jsx',
+    title: 'RecordTable — data management',
+    subtitle: 'The most feature-rich component. Shows all records in a table with real-time search, category/status filtering, sortable columns, pagination, search highlighting, loading skeletons, and an empty state.',
+    render: () => `
+      <div class="section-label">Features breakdown</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Search</div><div class="fc-desc">Filters by name, category, AND description. Case-insensitive. Highlights matching text in yellow.</div></div>
+        <div class="feature-card"><div class="fc-label">Category filter</div><div class="fc-desc">Dropdown with All + every category. Combines with search and status filter.</div></div>
+        <div class="feature-card"><div class="fc-label">Status filter</div><div class="fc-desc">Dropdown: All / Active / Pending / Closed. All three filters stack together.</div></div>
+        <div class="feature-card"><div class="fc-label">Sortable columns</div><div class="fc-desc">Click Name, Category, Status, or Date headers to sort asc/desc. Animated sort icon shows direction.</div></div>
+        <div class="feature-card"><div class="fc-label">Pagination</div><div class="fc-desc">7 records per page. Page buttons render dynamically. Resets to page 1 on any filter change.</div></div>
+        <div class="feature-card"><div class="fc-label">Search highlight</div><div class="fc-desc">The Highlight component splits text by the query and wraps matches in a &lt;mark&gt; tag styled with accent colors.</div></div>
+        <div class="feature-card"><div class="fc-label">Skeleton loading</div><div class="fc-desc">When loading prop is true, renders animated shimmer rows instead of data — useful when fetching from a real API.</div></div>
+        <div class="feature-card"><div class="fc-label">Empty state</div><div class="fc-desc">When filtered results are empty, shows a centered illustration with helpful text instead of an empty table.</div></div>
+      </div>
+      <div class="section-label">useMemo for performance</div>
+      <div class="hook-feature">
+        <div class="hook-name">filtered = useMemo()</div>
+        <div class="hook-desc">The filter, search, and sort logic only re-runs when records, search, category, status, sortField, or sortDir change. The paginated slice is derived from the memoized result.</div>
+      </div>
+      <div class="section-label">Row interaction</div>
+      <div class="hook-feature">
+        <div class="hook-name">group/hover pattern</div>
+        <div class="hook-desc">Tailwind's group class on the tr means the action buttons (Edit, Delete) are opacity-0 by default and fade to opacity-100 only when that row is hovered. Clean and minimal.</div>
+      </div>
+    `
+  },
+
+  Modals: {
+    path: 'src/components/EditModal.jsx  ·  ConfirmModal.jsx',
+    title: 'Modals — edit & delete',
+    subtitle: 'Two modals handle the two destructive actions. EditModal wraps RecordForm with the record\'s existing data. ConfirmModal shows a warning before deletion and requires explicit confirmation.',
+    render: () => `
+      <div class="section-label">EditModal</div>
+      <div class="hook-feature">
+        <div class="hook-name">RecordForm reuse</div>
+        <div class="hook-desc">Passes the record as initialData prop to RecordForm. The form pre-fills, validates, and calls onSave(id, data) on submit. Zero duplicate form code.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">Backdrop close</div>
+        <div class="hook-desc">Clicking outside the modal panel (on the dark overlay) calls onClose. The panel itself stops propagation with e.stopPropagation().</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">AnimatePresence</div>
+        <div class="hook-desc">Modal scales from 0.95→1 and fades in. On close, it reverses. Framer Motion handles the exit animation before removing from DOM.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="section-label">ConfirmModal</div>
+      <div class="hook-feature">
+        <div class="hook-name">open prop pattern</div>
+        <div class="hook-desc">AnimatePresence + the open boolean means the component is always rendered in JSX, but only animates into view when open is true. Smooth exit included.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">Two-button UX</div>
+        <div class="hook-desc">Cancel (neutral) and Delete (red, destructive). Both close the modal. Only Delete calls onConfirm() first. This pattern prevents accidental deletes.</div>
+      </div>
+    `
+  },
+
+  StatusBadge: {
+    path: 'src/components/StatusBadge.jsx',
+    title: 'StatusBadge — status pill',
+    subtitle: 'A tiny presentational component that renders a colored pill for Active, Pending, or Closed. Used everywhere records are displayed.',
+    render: () => `
+      <div class="section-label">Design</div>
+      <div class="hook-feature">
+        <div class="hook-name">Three states</div>
+        <div class="hook-desc">Active → green. Pending → amber. Closed → gray. Each has a matching colored dot, text color, border, and background — all configured via a lookup object at the top of the file.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">Dark mode</div>
+        <div class="hook-desc">Each state has separate dark: Tailwind variants so the badge always reads clearly on dark surfaces.</div>
+      </div>
+      <div class="section-label">Used in</div>
+      <div class="dep-list">
+        <span class="dep-pill">RecordTable — every row</span>
+        <span class="dep-pill">DashboardHome — recent records list</span>
+      </div>
+    `
+  },
+
+  LandingPage: {
+    path: 'src/pages/LandingPage.jsx',
+    title: 'LandingPage — marketing site',
+    subtitle: 'A full standalone page (no sidebar) that showcases the platform. Has a 3D animated hero, features section, platform capabilities section, how-it-works steps, a CTA, and a footer.',
+    render: () => `
+      <div class="section-label">Sections</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Hero</div><div class="fc-desc">Full-screen section with a Three.js canvas behind the headline, gradient orbs, and an animated scroll parallax effect using useScroll + useTransform.</div></div>
+        <div class="feature-card"><div class="fc-label">Features grid</div><div class="fc-desc">6 cards with staggered entrance animations using Framer Motion containerVariants + itemVariants. Cards lift on hover.</div></div>
+        <div class="feature-card"><div class="fc-label">Platform section</div><div class="fc-desc">Dark background section with a checklist on the left and 4 rebrand examples on the right (Library, Pharmacy, Students, Inventory).</div></div>
+        <div class="feature-card"><div class="fc-label">How it works</div><div class="fc-desc">4-step grid with large numbered labels and description text. Animates into view on scroll with viewport-triggered whileInView.</div></div>
+        <div class="feature-card"><div class="fc-label">CTA section</div><div class="fc-desc">Inverted (dark card on light bg) call-to-action block with a single button that navigates to /dashboard.</div></div>
+      </div>
+      <div class="section-label">3D background — Three.js via R3F</div>
+      <div class="hook-feature">
+        <div class="hook-name">FloatingShape</div>
+        <div class="hook-desc">A mesh (sphere, box, or torus) with MeshDistortMaterial (glass-like, animated distortion). useFrame rotates it every tick. Float from @react-three/drei adds the gentle bobbing.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">5 shapes</div>
+        <div class="hook-desc">Blue sphere, purple torus, cyan box, green sphere, amber torus — positioned in 3D space behind the text. Very low opacity (0.15) so they're subtle, not distracting.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">Parallax scroll</div>
+        <div class="hook-desc">useScroll tracks scroll progress within the hero ref. useTransform maps it to opacity (1→0) and y (0%→30%), so the hero content fades and rises as you scroll down.</div>
+      </div>
+      <div class="section-label">Dashboard mockup</div>
+      <div class="hook-feature">
+        <div class="hook-name">Hardcoded HTML preview</div>
+        <div class="hook-desc">A fake browser window below the hero shows a simplified dashboard preview — sidebar, stat cards, and a bar chart — all built with plain divs. Pure aesthetics, no real data.</div>
+      </div>
+    `
+  },
+
+  DashboardHome: {
+    path: 'src/pages/DashboardHome.jsx',
+    title: 'DashboardHome — overview',
+    subtitle: 'The first page you see after clicking Enter Dashboard. Shows a greeting, the 4 summary cards, a recent records list, and a live category breakdown bar chart.',
+    render: () => `
+      <div class="section-label">Sections</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Greeting</div><div class="fc-desc">Time-based greeting (Good morning / afternoon / evening) using the current hour. Purely JS — no library needed.</div></div>
+        <div class="feature-card"><div class="fc-label">SummaryCards</div><div class="fc-desc">Renders the SummaryCards component, passing the full records array. Cards compute their own stats.</div></div>
+        <div class="feature-card"><div class="fc-label">Recent records list</div><div class="fc-desc">records.slice(0, 5) — the 5 most recently added records (addRecord prepends). Each row shows avatar initial, name, category, date, and StatusBadge.</div></div>
+        <div class="feature-card"><div class="fc-label">Category breakdown</div><div class="fc-desc">Built with vanilla JS reduce() — counts records per category. Renders as animated horizontal progress bars, sorted by count descending.</div></div>
+      </div>
+      <div class="section-label">Data usage</div>
+      <div class="hook-feature">
+        <div class="hook-name">useRecords()</div>
+        <div class="hook-desc">The only hook called here. Destructures { records } — read-only, no mutations happen on this page.</div>
+      </div>
+    `
+  },
+
+  AddRecord: {
+    path: 'src/pages/AddRecord.jsx',
+    title: 'AddRecord — create new record',
+    subtitle: 'A simple page that renders the RecordForm in "add" mode. On submit it calls addRecord(), shows a toast, and resets the form. Includes a tips panel below the form.',
+    render: () => `
+      <div class="section-label">What happens on submit</div>
+      <div class="flow-row">
+        <div class="flow-node">RecordForm calls onSubmit(data)</div>
+        <span class="flow-arr">→</span>
+        <div class="flow-node">addRecord(data) in useRecords</div>
+        <span class="flow-arr">→</span>
+        <div class="flow-node highlight">localStorage updated, state updated</div>
+      </div>
+      <div class="flow-row" style="padding-left: 0; margin-top: 4px;">
+        <div class="flow-node">toast.success() fires</div>
+        <span class="flow-arr">+</span>
+        <div class="flow-node">form resets to defaults</div>
+      </div>
+      <div class="section-label">RecordForm in add mode</div>
+      <div class="hook-feature">
+        <div class="hook-name">No initialData</div>
+        <div class="hook-desc">Passes no initialData prop, so RecordForm starts with all empty fields and today's date.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">After submit</div>
+        <div class="hook-desc">RecordForm detects initialData is null and auto-resets the form — letting you add multiple records in sequence without navigating away.</div>
+      </div>
+    `
+  },
+
+  ManageRecords: {
+    path: 'src/pages/ManageRecords.jsx',
+    title: 'ManageRecords — CRUD hub',
+    subtitle: 'The control center for existing records. Renders RecordTable, manages the edit and delete modal states, and wires up the full read-update-delete flow.',
+    render: () => `
+      <div class="section-label">State managed here</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">editRecord</div><div class="fc-desc">The record object currently being edited. null = modal closed. Passed to EditModal as the record prop.</div></div>
+        <div class="feature-card"><div class="fc-label">deleteTarget</div><div class="fc-desc">The record pending deletion. null = modal closed. Passed to ConfirmModal to show its name in the message.</div></div>
+      </div>
+      <div class="section-label">Edit flow</div>
+      <div class="flow-row">
+        <div class="flow-node">User clicks Edit in table row</div><span class="flow-arr">→</span>
+        <div class="flow-node">setEditRecord(record)</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">EditModal opens with pre-filled form</div>
+      </div>
+      <div class="flow-row" style="margin-top:4px">
+        <div class="flow-node">User saves</div><span class="flow-arr">→</span>
+        <div class="flow-node">handleSave(id, data)</div><span class="flow-arr">→</span>
+        <div class="flow-node">updateRecord + toast + modal closes</div>
+      </div>
+      <div class="section-label">Delete flow</div>
+      <div class="flow-row">
+        <div class="flow-node">User clicks Delete in table row</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">ConfirmModal opens</div>
+      </div>
+      <div class="flow-row" style="margin-top:4px">
+        <div class="flow-node">User confirms</div><span class="flow-arr">→</span>
+        <div class="flow-node">deleteRecord(id) + toast.error</div><span class="flow-arr">→</span>
+        <div class="flow-node">setDeleteTarget(null)</div>
+      </div>
+    `
+  },
+
+  Analytics: {
+    path: 'src/pages/Analytics.jsx',
+    title: 'Analytics — charts',
+    subtitle: 'Four interactive Recharts visualizations built from live record data. Everything is computed with useMemo so charts update instantly when records change.',
+    render: () => `
+      <div class="section-label">The 4 charts</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Bar — by category</div><div class="fc-desc">Each category gets a bar. Each bar gets a distinct color via Cell + COLORS array. Sorted by count descending.</div></div>
+        <div class="feature-card"><div class="fc-label">Donut — by status</div><div class="fc-desc">PieChart with innerRadius makes it a donut. Active=green, Pending=amber, Closed=gray. Legend built manually beside the chart.</div></div>
+        <div class="feature-card"><div class="fc-label">Line — over time</div><div class="fc-desc">Groups records by YYYY-MM month. X axis shows "Jan 24" style labels. Shows trend of when records were created.</div></div>
+        <div class="feature-card"><div class="fc-label">Stacked bar — status per category</div><div class="fc-desc">Each category bar is divided into Active/Pending/Closed segments. Lets you see which categories have the most pending items.</div></div>
+      </div>
+      <div class="section-label">Data processing with useMemo</div>
+      <div class="hook-feature">
+        <div class="hook-name">byCategory</div>
+        <div class="hook-desc">records.reduce() builds a {category: count} object, then Object.entries().map() converts to [{name, value}] for Recharts.</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">overTime</div>
+        <div class="hook-desc">Groups by record.date.slice(0,7) (the YYYY-MM part). Sorts entries alphabetically (which equals chronologically for ISO dates).</div>
+      </div>
+      <div class="hook-feature">
+        <div class="hook-name">CustomTooltip</div>
+        <div class="hook-desc">A shared tooltip component renders on hover for all charts. Matches the app's design system instead of Recharts' default tooltip.</div>
+      </div>
+    `
+  },
+
+  Settings: {
+    path: 'src/pages/Settings.jsx',
+    title: 'Settings — configuration',
+    subtitle: 'A settings page styled like a modern app preferences panel. Covers appearance, platform name, and data management (export, reset, clear).',
+    render: () => `
+      <div class="section-label">Sections</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">Color mode</div><div class="fc-desc">A segmented Light/Dark toggle that calls setDark() from useTheme. Syncs immediately across the whole app.</div></div>
+        <div class="feature-card"><div class="fc-label">Accent colors</div><div class="fc-desc">5 color swatches (Blue, Violet, Emerald, Rose, Amber). Clicking one shows a toast. To actually apply the accent, update CSS variables or Tailwind config.</div></div>
+        <div class="feature-card"><div class="fc-label">System name</div><div class="fc-desc">Renames the platform. Saves to localStorage under 'nexus-system-name'. Reload the sidebar/logo to reflect the new name.</div></div>
+        <div class="feature-card"><div class="fc-label">Export JSON</div><div class="fc-desc">Creates a Blob from JSON.stringify(records), makes a download link, clicks it programmatically. No library needed.</div></div>
+        <div class="feature-card"><div class="fc-label">Reset data</div><div class="fc-desc">Removes 'nexus-records' from localStorage, then reloads the page. useRecords will re-seed with the 10 default records.</div></div>
+        <div class="feature-card"><div class="fc-label">Clear all</div><div class="fc-desc">Uses window.confirm() (native browser dialog) as a secondary confirmation before wiping everything. Destructive — no undo.</div></div>
+      </div>
+      <div class="section-label">Section/Row components</div>
+      <div class="hook-feature">
+        <div class="hook-name">Section + SettingRow</div>
+        <div class="hook-desc">Two local helper components make the settings layout DRY. Section provides the white card with a title. SettingRow provides the flex row with label, description, and a right-side control slot.</div>
+      </div>
+    `
+  },
+
+  css: {
+    path: 'src/index.css',
+    title: 'index.css — global styles',
+    subtitle: 'Three Tailwind layers plus custom scrollbar styling. The @layer components block defines all reusable classes (.glass, .btn-primary, .input-field, .sidebar-link) so they can be used like Tailwind utilities.',
+    render: () => `
+      <div class="section-label">Custom classes defined here</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="fc-label">.glass</div><div class="fc-desc">bg-white/60 + backdrop-blur-xl + border. The frosted glass effect used on the nav and some cards.</div></div>
+        <div class="feature-card"><div class="fc-label">.btn-primary</div><div class="fc-desc">Dark background button with hover, active scale, and shadow. Inverts automatically in dark mode.</div></div>
+        <div class="feature-card"><div class="fc-label">.btn-secondary</div><div class="fc-desc">Light gray button for cancel/secondary actions.</div></div>
+        <div class="feature-card"><div class="fc-label">.input-field</div><div class="fc-desc">Consistent form input styling with focus ring, border, and dark mode variant.</div></div>
+        <div class="feature-card"><div class="fc-label">.sidebar-link</div><div class="fc-desc">Navigation item with hover and .active state. Active inverts to bg-gray-900 text-white in light mode.</div></div>
+        <div class="feature-card"><div class="fc-label">.shimmer-bg</div><div class="fc-desc">Animated skeleton loader background — a moving gradient. Used in RecordTable's loading skeleton rows.</div></div>
+      </div>
+      <div class="section-label">tailwind.config.js extras</div>
+      <div class="dep-list">
+        <span class="dep-pill">Syne (display font)</span>
+        <span class="dep-pill">Outfit (body font)</span>
+        <span class="dep-pill">JetBrains Mono (code)</span>
+        <span class="dep-pill">float keyframe animation</span>
+        <span class="dep-pill">shimmer keyframe</span>
+        <span class="dep-pill">accent color ramp</span>
+        <span class="dep-pill">darkMode: 'class'</span>
+      </div>
+    `
+  },
+
+  dataflow: {
+    path: 'Data flow & state',
+    title: 'How data flows through the app',
+    subtitle: 'There is no external state manager (no Redux, no Zustand). State lives in useRecords — a single custom hook — and flows down to every page via prop or direct hook call.',
+    render: () => `
+      <div class="section-label">State ownership</div>
+      <div class="hook-feature">
+        <div class="hook-name">useRecords()</div>
+        <div class="hook-desc">Called once per page that needs it. Each call reads from the same localStorage key, so all pages stay in sync. React re-renders propagate changes immediately.</div>
+      </div>
+      <div class="section-label">Read path</div>
+      <div class="flow-row">
+        <div class="flow-node">localStorage</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">useRecords state</div><span class="flow-arr">→</span>
+        <div class="flow-node">SummaryCards / RecordTable / Analytics / DashboardHome</div>
+      </div>
+      <div class="section-label">Write path (add)</div>
+      <div class="flow-row">
+        <div class="flow-node">RecordForm submit</div><span class="flow-arr">→</span>
+        <div class="flow-node">addRecord(data)</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">setRecords([newRecord, ...prev])</div><span class="flow-arr">→</span>
+        <div class="flow-node">localStorage.setItem via useEffect</div>
+      </div>
+      <div class="section-label">Write path (edit)</div>
+      <div class="flow-row">
+        <div class="flow-node">EditModal save</div><span class="flow-arr">→</span>
+        <div class="flow-node">updateRecord(id, data)</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">setRecords(prev.map(...))</div>
+      </div>
+      <div class="section-label">Write path (delete)</div>
+      <div class="flow-row">
+        <div class="flow-node">ConfirmModal confirm</div><span class="flow-arr">→</span>
+        <div class="flow-node">deleteRecord(id)</div><span class="flow-arr">→</span>
+        <div class="flow-node highlight">setRecords(prev.filter(...))</div>
+      </div>
+      <div class="section-label">Theme state (separate from records)</div>
+      <div class="hook-feature">
+        <div class="hook-name">ThemeContext</div>
+        <div class="hook-desc">Lives in useTheme.jsx — completely separate from record data. Only stores a boolean (dark: true/false) and syncs to localStorage + HTML class attribute. No connection to CRUD.</div>
+      </div>
+      <div class="section-label">No prop drilling</div>
+      <div class="hook-feature">
+        <div class="hook-name">Direct hook calls</div>
+        <div class="hook-desc">Every page calls useRecords() directly — not passed from a parent. This means any page can read or mutate records independently, without threading props through DashboardLayout.</div>
+      </div>
+    `
+  }
+}
+
+let current = 'overview'
+
+function show(id) {
+  current = id
+  document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'))
+  const tab = document.getElementById('tab-' + id)
+  if (tab) tab.classList.add('active')
+
+  const data = TABS[id]
+  if (!data) return
+
+  document.getElementById('content').innerHTML = `
+    <div class="content-header">
+      <div class="file-path">${data.path}</div>
+      <div class="file-title">${data.title}</div>
+      <div class="file-subtitle">${data.subtitle}</div>
+    </div>
+    ${data.render()}
+  `
+}
+
+show('overview')
+</script>
