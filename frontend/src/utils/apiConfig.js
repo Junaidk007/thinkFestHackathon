@@ -1,4 +1,4 @@
-const configuredBaseUrl =  'http://localhost:3000'
+const configuredBaseUrl =  'https://thinkfesthackathon.onrender.com'
 
 export const API_BASE_URL = configuredBaseUrl.replace(/\/+$/, '')
 
